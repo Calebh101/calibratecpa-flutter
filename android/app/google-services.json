@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "713888861074",
+    "project_id": "calibratecpa",
+    "storage_bucket": "calibratecpa.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:713888861074:android:a900392d7a5ee5e9a34f4b",
+        "android_client_info": {
+          "package_name": "com.calebh101.calibratecpa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBrL_rX2xT9KZQm19mIEo5wM04DuBIV_Tw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

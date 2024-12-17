@@ -13,10 +13,10 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     firebase = true;
-    print("flutterfire firebase initialized");
+    print("flutterfire: firebase initialized");
   } catch (e) {
     firebase = false;
-    print("flutterfire firebase error: $e");
+    print("flutterfire: firebase error: $e");
   }
   runApp(const MyApp());
 }

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:calibratecpa/var.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<Map> getFirebaseData(String dataSource) async {
   print("fetching firebase data...");
@@ -12,6 +13,29 @@ Future<Map> getFirebaseData(String dataSource) async {
     print("firebase data error: firebase not initialized");
     return getSampleData();
   }
+}
+
+Future<Map> loadData({String defaultDataSource = "sample"}) async {
+  final prefs = await SharedPreferences.getInstance();
+  final dataSource = prefs.containsKey("dataSource")
+      ? prefs.get("dataSource").toString()
+      : defaultDataSource;
+  final port =
+      prefs.containsKey("dataSourcePort") ? prefs.get("dataSourcePort") : 8080;
+  Map dataS = {};
+
+  switch (dataSource) {
+    case "firebase-online":
+      dataS = await getFirebaseData("firebase placeholder");
+    case "firebase-localhost":
+      dataS = await getFirebaseData("localhost:$port");
+    case "sample":
+      dataS = getSampleData();
+    default:
+      dataS = getSampleData();
+  }
+
+  return dataS;
 }
 
 Map getSampleData() {

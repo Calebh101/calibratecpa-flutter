@@ -5,7 +5,6 @@ import 'package:calibratecpa/firebase.dart';
 import 'package:flutter/material.dart';
 import 'package:localpkg/dialogue.dart';
 import 'package:localpkg/functions.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 bool lightMode = true;
 
@@ -55,28 +54,6 @@ class _HomeState extends State<Home> {
     ];
   }
 
-  Future<Map> loadData({String defaultDataSource = "sample"}) async {
-    final prefs = await SharedPreferences.getInstance();
-    final dataSource = prefs.containsKey("dataSource")
-        ? prefs.get("dataSource").toString()
-        : defaultDataSource;
-    final port = prefs.get("dataSourcePort");
-    Map dataS = {};
-
-    switch (dataSource) {
-      case "firebase-online":
-        dataS = await getFirebaseData("firebase placeholder");
-      case "firebase-localhost":
-        dataS = await getFirebaseData("localhost:$port");
-      case "sample":
-        dataS = getSampleData();
-      default:
-        dataS = getSampleData();
-    }
-
-    return dataS;
-  }
-
   Future<void> refresh({int mode = 1}) async {
     if (mode == 1) {
       data = await loadData();
@@ -86,6 +63,7 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    print("building: getting variables");
     lightMode = Theme.of(context).brightness == Brightness.light;
     List items = data["data"];
     Map item = items[selectedItem];
@@ -93,13 +71,17 @@ class _HomeState extends State<Home> {
     int buttonGridCrossAxisCount =
         getCrossAxisCount(context: context, factor: 172);
     int maxButtonGridCrossAxisCount = 5;
+
     if (buttonGridCrossAxisCount > maxButtonGridCrossAxisCount) {
       buttonGridCrossAxisCount = maxButtonGridCrossAxisCount;
     }
     if (buttonGridCrossAxisCount > buttons.length) {
       buttonGridCrossAxisCount = buttons.length;
     }
+
     buildButtons(item);
+    print("building: building scaffold");
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -122,7 +104,7 @@ class _HomeState extends State<Home> {
                   int index = entry.key;
                   Map item = entry.value;
                   return DropdownMenuItem(
-                    value: index, // Ensure the type matches DropdownButton<int>
+                    value: index,
                     child: Text(item["name"]),
                   );
                 }).toList(),
@@ -236,7 +218,11 @@ Widget circle({
   );
 }
 
-Widget StatusBar({required Map data, required List steps, double? size, bool useSimpleColor = true}) {
+Widget StatusBar(
+    {required Map data,
+    required List steps,
+    double? size,
+    bool useSimpleColor = true}) {
   return Center(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -268,24 +254,33 @@ Widget StatusBar({required Map data, required List steps, double? size, bool use
               steps.length,
               (index) => Row(
                     children: [
-                      if (index < steps.length && steps[index]["show"] && steps[index - 1 < 0 ? 0 : index - 1]["show"])
+                      if (index < steps.length &&
+                          steps[index]["show"] &&
+                          steps[index - 1 < 0 ? 0 : index - 1]["show"])
                         circleRowSpacer(
                             active: data["status"] >= index, size: size),
                       if (steps[index]["show"])
                         circle(
-                          size: 50,
-                          color: 
-                            useSimpleColor
-                              ? data["status"] >= index && steps[index]["show"]
-                                  ? lightMode ? Colors.blue : Colors.lightBlue
-                                  : Colors.grey
-                              : (steps[data["status"]].containsKey("overwriteColor")
-                                  ? steps[data["status"]]["overwriteColor"]
-                                  : data["status"] >= index && steps[index]["show"]
-                                      ? steps[index]["color"]
-                                      : Colors.grey)
-                        ),
-                      if (index < steps.length && steps[index]["show"] && steps[index + 1 > steps.length ? steps.length : index + 1]["show"])
+                            size: 50,
+                            color: useSimpleColor
+                                ? data["status"] >= index &&
+                                        steps[index]["show"]
+                                    ? lightMode
+                                        ? Colors.blue
+                                        : Colors.lightBlue
+                                    : Colors.grey
+                                : (steps[data["status"]]
+                                        .containsKey("overwriteColor")
+                                    ? steps[data["status"]]["overwriteColor"]
+                                    : data["status"] >= index &&
+                                            steps[index]["show"]
+                                        ? steps[index]["color"]
+                                        : Colors.grey)),
+                      if (index < steps.length &&
+                          steps[index]["show"] &&
+                          steps[index + 1 > steps.length
+                              ? steps.length
+                              : index + 1]["show"])
                         circleRowSpacer(
                             active: data["status"] >= index, size: size),
                     ],
@@ -300,7 +295,11 @@ Widget circleRowSpacer({double? size = 20, bool active = false}) {
   return Container(
     width: size, // Length of the line
     height: active ? 2 : 2, // Thickness of the line
-    color: active ? lightMode ? Colors.blue : Colors.lightBlue : Colors.grey, // Color of the line
+    color: active
+        ? lightMode
+            ? Colors.blue
+            : Colors.lightBlue
+        : Colors.grey, // Color of the line
   );
 }
 

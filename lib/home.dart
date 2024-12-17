@@ -56,7 +56,7 @@ class _HomeState extends State<Home> {
 
   Future<void> refresh({int mode = 1}) async {
     if (mode == 1) {
-      data = await loadData();
+      data = await loadData(context);
     }
     setState(() {});
   }
@@ -79,6 +79,7 @@ class _HomeState extends State<Home> {
       buttonGridCrossAxisCount = buttons.length;
     }
 
+    print("building: building data");
     buildButtons(item);
     print("building: building scaffold");
 

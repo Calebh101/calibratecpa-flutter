@@ -1,44 +1,71 @@
 import 'dart:math';
 
+import 'package:calibratecpa/util.dart';
 import 'package:calibratecpa/var.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<Map> getFirebaseData(String dataSource) async {
+Future<Map<String, dynamic>?> getFirebaseData(BuildContext context, String dataSource) async {
   print("fetching firebase data...");
-  if (firebase) {
-    // TODO
-    return getSampleData();
-  } else {
-    print("firebase data error: firebase not initialized");
-    return getSampleData();
+  try {
+    if (firebase) {
+      final User? user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final String uid = user.uid;
+        final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
+        final docSnapshot = await docRef.get();
+        if (docSnapshot.exists) {
+          final data = docSnapshot.data();
+          print('User Document Data: $data');
+          return data;
+        } else {
+          print('firebase data error: no user data available');
+        }
+      } else {
+        print("firebase data error: no user available");
+        signIn(context, false);
+      }
+    } else {
+      print("firebase data error: firebase not initialized");
+    }
+  } catch (e) {
+    print("firebase data error: $e");
   }
+  return null;
 }
 
-Future<Map> loadData({String defaultDataSource = "sample"}) async {
+Future<Map> loadData(BuildContext context, {String defaultDataSource = "firebase-localhost"}) async {
   final prefs = await SharedPreferences.getInstance();
   final dataSource = prefs.containsKey("dataSource")
       ? prefs.get("dataSource").toString()
       : defaultDataSource;
-  final port =
-      prefs.containsKey("dataSourcePort") ? prefs.get("dataSourcePort") : 8080;
-  Map dataS = {};
+
+  final localIP = "127.0.0.1";
+  final ports = {
+    "firestore": 8080,
+  };
+
+  Map? dataS = {};
 
   switch (dataSource) {
     case "firebase-online":
-      dataS = await getFirebaseData("firebase placeholder");
+      dataS = await getFirebaseData(context, "firebase placeholder");
     case "firebase-localhost":
-      dataS = await getFirebaseData("localhost:$port");
+      dataS = await getFirebaseData(context, "localhost:${ports["firestore"]}");
+    case "firebase-localhost-remote":
+      dataS = await getFirebaseData(context, "$localIP:${ports["firestore"]}");
     case "sample":
       dataS = getSampleData();
     default:
       dataS = getSampleData();
   }
 
-  return dataS;
+  return dataS ?? getSampleData();
 }
 
-Map getSampleData() {
+Map<String, dynamic> getSampleData() {
   print("fetching sample data...");
   final random = Random();
   int status = random.nextInt(5);

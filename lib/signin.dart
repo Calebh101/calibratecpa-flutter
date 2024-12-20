@@ -1,6 +1,8 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:calibratecpa/firebase.dart';
+import 'package:calibratecpa/var.dart';
 import 'package:flutter/material.dart';
 import 'package:localpkg/dialogue.dart';
+import 'package:localpkg/functions.dart';
 
 class SignIn extends StatefulWidget {
   final bool exitable;
@@ -17,20 +19,6 @@ class _SignInState extends State<SignIn> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  void _signIn() async {
-    showSnackBar(context, "Loading...");
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-      print('signed in as: ${userCredential.user?.email}');
-    } on FirebaseAuthException catch (e) {
-      print('error signing in: ${e.message}');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,12 +90,29 @@ class _SignInState extends State<SignIn> {
 
                 // Sign-in button
                 ElevatedButton(
-                  onPressed: _signIn,
-                  child: Text('Sign In'),
+                  onPressed: () async {
+                    if (await signInS(context, _emailController.text, _passwordController.text)) {
+                      Navigator.of(context).pop();
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.symmetric(vertical: 16),
                     textStyle: TextStyle(fontSize: 18),
                   ),
+                  child: Text('Sign In'),
+                ),
+                SizedBox(height: 15),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (await showConfirmDialogue(context, "Create Account", "In order to create an account, you'll need to use the website. After you create an account on the website, you can sign in on the app. Do you want to open the create account page now?") ?? false) {
+                      openUrl(url: Uri.parse("$baseUrl/account.html"));
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    textStyle: TextStyle(fontSize: 18),
+                  ),
+                  child: Text('Create Account'),
                 ),
               ],
             ),

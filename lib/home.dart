@@ -1,4 +1,5 @@
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:calibratecpa/util.dart';
 import 'package:calibratecpa/var.dart';
 import 'package:calibratecpa/documents.dart';
 import 'package:calibratecpa/firebase.dart';
@@ -17,7 +18,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   int selectedItem = 0;
-  Map data = getSampleData();
+  Map data = {"error": "loading"};
   List buttons = [];
 
   @override
@@ -56,6 +57,9 @@ class _HomeState extends State<Home> {
 
   Future<void> refresh({int mode = 1}) async {
     if (mode == 1) {
+      setState(() {
+        data = {"error": "loading"};
+      });
       data = await loadData(context);
     }
     setState(() {});
@@ -65,9 +69,17 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     print("building: getting variables");
     lightMode = Theme.of(context).brightness == Brightness.light;
-    List items = data["data"];
-    Map item = items[selectedItem];
-    List steps = item["steps"];
+
+    List items = [];
+    Map item = {};
+    List steps = [];
+
+    if (data["error"] == null) {
+      items = data["data"];
+      item = items[selectedItem];
+      steps = item["steps"];
+    }
+
     int buttonGridCrossAxisCount =
         getCrossAxisCount(context: context, factor: 172);
     int maxButtonGridCrossAxisCount = 5;
@@ -98,7 +110,7 @@ class _HomeState extends State<Home> {
       body: Center(
         child: RefreshIndicator(
           onRefresh: refresh,
-          child: Column(
+          child: !data.containsKey("error") ? Column(
             children: [
               DropdownButton(
                 items: items.asMap().entries.map((entry) {
@@ -118,10 +130,7 @@ class _HomeState extends State<Home> {
                 borderRadius: BorderRadius.circular(12),
                 focusColor: Colors.transparent,
               ),
-              StatusBar(
-                  data: item,
-                  steps: steps,
-                  size: getSizeFactor(context: context) * 16),
+              StatusBar(data: item, steps: steps, size: getSizeFactor(context: context) * 16),
               SizedBox(height: 20),
               Expanded(
                 child: Padding(
@@ -151,6 +160,26 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ],
+          ) : data["error"] == "loading" ? CircularProgressIndicator() : data["error"] == "nouser" ? Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                TextButton(child: Text("Sign In", style: TextStyle(
+                  fontSize: 32,
+                )), onPressed: () {
+                  signIn(context, true);
+                })
+              ]
+            ),
+          ) : Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Text("Your account is not set up yet. Please wait until your account is set up for use with the Calibrate CPA Dashboard.", style: TextStyle(
+                  fontSize: 24,
+                ), textAlign: TextAlign.center),
+              ],
+            ),
           ),
         ),
       ),
@@ -224,6 +253,9 @@ Widget StatusBar(
     required List steps,
     double? size,
     bool useSimpleColor = true}) {
+  int status = data["status"] ?? 0;
+  Map statusItem = steps[status];
+  print("${data["status"]},$status,$statusItem");
   return Center(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -235,11 +267,11 @@ Widget StatusBar(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: AutoSizeText(
-                  steps[data["status"]]["name"],
+                  statusItem["name"],
                   style: TextStyle(
                     fontSize: 48,
-                    color: steps[data["status"]]["color"] ??
-                        steps[data["status"]]["overwriteColor"],
+                    color: statusItem["color"] ??
+                        statusItem["overwriteColor"],
                   ),
                   maxLines: 1,
                   minFontSize: 10,
@@ -251,41 +283,43 @@ Widget StatusBar(
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-              steps.length,
-              (index) => Row(
-                    children: [
-                      if (index < steps.length &&
-                          steps[index]["show"] &&
-                          steps[index - 1 < 0 ? 0 : index - 1]["show"])
-                        circleRowSpacer(
-                            active: data["status"] >= index, size: size),
-                      if (steps[index]["show"])
-                        circle(
-                            size: 50,
-                            color: useSimpleColor
-                                ? data["status"] >= index &&
+          children: List.generate(steps.length, (index) { // til that for some reason List.generate goes 1, 2, 3 instead of 0, 1, 2
+            print("generating status bar: $index");
+            Map before = index - 1 < 0 ? {"show": false} : (steps[index - 1] ?? {"show": false});
+            Map after = index + 2 > steps.length ? {"show": false} : steps[index];
+            print("building status bar: $index");
+            return Row(
+                children: [
+                  if (index < steps.length &&
+                      steps[index]["show"] &&
+                      before["show"])
+                    circleRowSpacer(
+                        active: status >= index, size: size),
+                  if (steps[index]["show"])
+                    circle(
+                        size: 50,
+                        color: useSimpleColor
+                            ? status >= index &&
+                                    steps[index]["show"]
+                                ? lightMode
+                                    ? Colors.blue
+                                    : Colors.lightBlue
+                                : Colors.grey
+                            : (statusItem.containsKey("overwriteColor")
+                                ? statusItem["overwriteColor"]
+                                : status >= index &&
                                         steps[index]["show"]
-                                    ? lightMode
-                                        ? Colors.blue
-                                        : Colors.lightBlue
-                                    : Colors.grey
-                                : (steps[data["status"]]
-                                        .containsKey("overwriteColor")
-                                    ? steps[data["status"]]["overwriteColor"]
-                                    : data["status"] >= index &&
-                                            steps[index]["show"]
-                                        ? steps[index]["color"]
-                                        : Colors.grey)),
-                      if (index < steps.length &&
-                          steps[index]["show"] &&
-                          steps[index + 1 > steps.length
-                              ? steps.length
-                              : index + 1]["show"])
-                        circleRowSpacer(
-                            active: data["status"] >= index, size: size),
-                    ],
-                  )),
+                                    ? steps[index]["color"] ?? Colors.white
+                                    : Colors.grey)),
+                  if (index < steps.length &&
+                      steps[index]["show"] &&
+                      after["show"])
+                    circleRowSpacer(
+                        active: status >= index, size: size),
+                ],
+              );
+            }
+          ),
         ),
       ],
     ),
@@ -305,5 +339,5 @@ Widget circleRowSpacer({double? size = 20, bool active = false}) {
 }
 
 void openContactUrl(BuildContext context) {
-  openUrlConf(context, contactUrl);
+  openUrlConf(context, Uri.parse(contactUrl));
 }

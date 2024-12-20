@@ -1,13 +1,12 @@
 import 'dart:math';
 
-import 'package:calibratecpa/util.dart';
 import 'package:calibratecpa/var.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:localpkg/dialogue.dart';
 
-Future<Map<String, dynamic>?> getFirebaseData(BuildContext context, String dataSource) async {
+Future<Map<String, dynamic>> getFirebaseData(BuildContext context) async {
   print("fetching firebase data...");
   try {
     if (firebase) {
@@ -18,51 +17,40 @@ Future<Map<String, dynamic>?> getFirebaseData(BuildContext context, String dataS
         final docSnapshot = await docRef.get();
         if (docSnapshot.exists) {
           final data = docSnapshot.data();
-          print('User Document Data: $data');
-          return data;
+          if (data == null) {
+            print("firebase data error: user data is null");
+            return {"error": "nulldata"};
+          } else {
+            print("firebase data success: $data");
+            if (data.containsKey("data")) {
+              print("firebase data success: verified status data");
+              return data;
+            } else {
+              print("firebase data error: user has no status data");
+              return {"error": "nostatusdata"};
+            }
+          }
         } else {
           print('firebase data error: no user data available');
+          return {"error": "nouserdata"};
         }
       } else {
         print("firebase data error: no user available");
-        signIn(context, false);
+        return {"error": "nouser"};
       }
     } else {
       print("firebase data error: firebase not initialized");
+      return {"error": "nofirebase"};
     }
   } catch (e) {
     print("firebase data error: $e");
+    return {"error": "e"};
   }
-  return null;
 }
 
-Future<Map> loadData(BuildContext context, {String defaultDataSource = "firebase-localhost"}) async {
-  final prefs = await SharedPreferences.getInstance();
-  final dataSource = prefs.containsKey("dataSource")
-      ? prefs.get("dataSource").toString()
-      : defaultDataSource;
-
-  final localIP = "127.0.0.1";
-  final ports = {
-    "firestore": 8080,
-  };
-
-  Map? dataS = {};
-
-  switch (dataSource) {
-    case "firebase-online":
-      dataS = await getFirebaseData(context, "firebase placeholder");
-    case "firebase-localhost":
-      dataS = await getFirebaseData(context, "localhost:${ports["firestore"]}");
-    case "firebase-localhost-remote":
-      dataS = await getFirebaseData(context, "$localIP:${ports["firestore"]}");
-    case "sample":
-      dataS = getSampleData();
-    default:
-      dataS = getSampleData();
-  }
-
-  return dataS ?? getSampleData();
+Future<Map> loadData(BuildContext context) async {
+  Map? dataS = await getFirebaseData(context);
+  return dataS.containsKey("error") ? (dataS) : dataS;
 }
 
 Map<String, dynamic> getSampleData() {
@@ -167,4 +155,24 @@ Map<String, dynamic> getSampleData() {
       },
     ],
   };
+}
+
+
+Future<bool> signInS(BuildContext context, String email, String password) async {
+  print("signing in");
+  showSnackBar(context, "Loading...");
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  try {
+    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    print('signed in as: ${userCredential.user?.email}');
+    showSnackBar(context, "Successfully signed in as $email!");
+    return true;
+  } on FirebaseAuthException catch (e) {
+    print('error signing in: ${e.message}');
+    showSnackBar(context, "Unable to sign in. Is your username and password correct?");
+    return false;
+  }
 }

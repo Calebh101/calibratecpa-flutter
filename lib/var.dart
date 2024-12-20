@@ -1,7 +1,13 @@
-String version = "0.0.0A";
-bool beta = true;
+import 'package:flutter/material.dart';
 
-String email = "jake@calibratecpa.com";
-Uri contactUrl = Uri.parse("https://calibratecpa.com/#f3367e53-636c-4b0f-8591-0f7a70f7b043");
+const String version = "0.0.0A";
+const Color themeColor = Color(0xFF1157BA);
+const bool beta = true;
+const bool useEmulators = false;
+
+const String email = "jake@calibratecpa.com";
+const String baseUrl = "https://calibratecpa.web.app";
+const String contactUrl = "$baseUrl/contact.html";
 
 bool firebase = false;
+bool signingIn = false;

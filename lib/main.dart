@@ -23,9 +23,9 @@ void main() async {
     print("firebase initialization error: $e");
   }
 
-  if (useEmulators && firebase && kDebugMode) {
+  if (emulatorEnabled && firebase && kDebugMode) {
     try {
-      String address = "localhost";
+      String address = emulatorAddress;
       FirebaseFirestore.instance.useFirestoreEmulator(address, 8080);
       await FirebaseAuth.instance.useAuthEmulator(address, 9099);
       print("firebase emulator setup success: $address");
@@ -33,7 +33,17 @@ void main() async {
       print("firebase emulator setup error: $e");
     }
   } else {
-    print("firebase emulator setup skipped: $useEmulators,$firebase,$kDebugMode");
+    print("firebase emulator setup skipped: $emulatorEnabled,$firebase,$kDebugMode");
+  }
+
+  if (firebase) {
+    FirebaseFirestore.instance.settings = Settings(
+      sslEnabled: false,
+      persistenceEnabled: false,
+    );
+
+    await FirebaseFirestore.instance.collection('test').add({'name': 'Emulator Test'});
+    print('firebase firestore host: ${FirebaseFirestore.instance.settings.host}');
   }
 
   runApp(const MyApp());
@@ -42,7 +52,6 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

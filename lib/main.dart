@@ -26,7 +26,7 @@ void main() async {
   if (emulatorEnabled && firebase && kDebugMode) {
     try {
       String address = emulatorAddress;
-      FirebaseFirestore.instance.useFirestoreEmulator(address, 8080);
+      FirebaseFirestore.instance.useFirestoreEmulator(address, 8090);
       await FirebaseAuth.instance.useAuthEmulator(address, 9099);
       print("firebase emulator setup success: $address");
     } catch (e) {
